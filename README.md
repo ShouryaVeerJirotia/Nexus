@@ -27,6 +27,11 @@ Nexus AI is an AI-powered study planning system that generates, refines, and opt
 
 ## 🚀 Live Demo
 
+<img width="1449" height="819" alt="Screenshot 2026-03-31 at 5 41 13 PM" src="https://github.com/user-attachments/assets/c30b9464-84bd-4477-9f7e-5c12143331ce" />
+
+<img width="1470" height="826" alt="Screenshot 2026-03-31 at 5 31 05 PM" src="https://github.com/user-attachments/assets/72e1cd37-2041-4bb9-b48e-cffe13b9905e" />
+
+
 👉 https://ainexus.netlify.app
 
 ---
