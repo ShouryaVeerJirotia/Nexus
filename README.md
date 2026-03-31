@@ -31,10 +31,6 @@ Nexus AI is an AI-powered study planning system that generates, refines, and opt
 
 ---
 
-## 📸 Preview
-
-
----
 
 ## ⚙️ How It Works
 
@@ -66,7 +62,7 @@ This project is licensed under the MIT License.
 **Shourya Veer Jirotia**
 
 * 🌐 Portfolio: https://thesvj.netlify.app/
-* 💼 LinkedIn: (add your link)
+* 💼 LinkedIn: www.linkedin.com/in/shouryaveerjirotiasvj
 
 ---
 
