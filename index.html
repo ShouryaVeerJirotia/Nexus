@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexus AI | Real AI API Integration v6.0</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        @media (max-width: 768px) {
+            .glass-panel {
+                padding: 16px !important;
+                border-radius: 16px;
+            }
+
+            #timerDisplay {
+                font-size: 48px !important;
+            }
+
+            button {
+                padding: 10px !important;
+                font-size: 12px !important;
+
+            }
+
+            input,
+            textarea {
+                font-size: 14px !important;
+            }
+        }
+
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 15, 30, 0.4);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.6s ease, visibility 0.6s;
+        }
+
+        .loader-content {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            text-align: center;
+            color: #22d3ee;
+            box-shadow:
+                0 0 25px rgba(34, 211, 238, 0.1),
+                inset 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #22d3ee;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        :root {
+            --glass-bg: rgba(15, 23, 42, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-cyan: #22d3ee;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #f8fafc;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px) saturate(150%);
+            -webkit-backdrop-filter: blur(24px) saturate(150%);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: #fff;
+            transition: all 0.2s ease;
+        }
+
+        .glass-input:focus {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: var(--accent-cyan);
+            outline: none;
+            box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
+        }
+
+        .glass-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(34, 211, 238, 0.5);
+            }
+        }
+
+        .engine-active {
+            animation: pulse-glow 2s infinite;
+            border-color: rgba(34, 211, 238, 0.5);
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8 lg:p-12 overflow-x-hidden">
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="spinner"></div>
+            <p>Initializing Nexus Engine...</p>
+        </div>
+    </div>
+
+    <div class="max-w-[1400px] mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Nexus <span
+                        class="text-cyan-400 font-light italic">v6.0</span></h1>
+                <p class="text-slate-300 text-xs font-bold uppercase tracking-[0.2em] mt-1">Live AI API Engine</p>
+            </div>
+            <div
+                class="glass-panel px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-cyan-300 flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                Neural Link: Active
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            <div class="xl:col-span-4 flex flex-col gap-6">
+                <!-- Parameter Setup -->
+                <section class="glass-panel p-6">
+                    <div class="mb-6 border-b border-white/10 pb-4">
+                        <h2 class="text-lg font-bold flex items-center gap-2 mb-3">
+                            <span class="text-cyan-400">🔑</span> System Authentication
+                        </h2>
+                        <input id="apiKey" type="password" placeholder="Enter Gemini API Key (sk-...)"
+                            class="glass-input w-full p-3 text-xs font-mono" />
+                        <!-- Disabled OpenAI/Anthropic keys (reserved for future upgrade)
+                        <input id="openaiKey" type="password" placeholder="Enter OpenAI API Key"
+                            class="glass-input w-full p-3 text-xs font-mono" />
+                        <input id="anthropicKey" type="password" placeholder="Enter Anthropic API Key"
+                            class="glass-input w-full p-3 text-xs font-mono" />
+                        -->
+                        <p class="text-[9px] text-slate-400 mt-2 uppercase tracking-widest">Key remains local. Never
+                            shared.</p>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold flex items-center gap-2">
+                            <span class="text-cyan-400">⚙️</span> Target Streams
+                        </h2>
+                    </div>
+
+                    <div id="subject-container" class="space-y-4 max-h-[350px] overflow-y-auto pr-2">
+                        <div class="subject-entry glass-panel p-4 !bg-white/5 !shadow-none !border-white/10">
+                            <div class="flex gap-3 mb-3">
+                                <input type="text" placeholder="Subject (e.g. Thermodynamics)"
+                                    class="sub-name glass-input flex-1 p-3 text-sm font-semibold" />
+                                <select
+                                    class="sub-lvl glass-input w-24 p-3 text-xs font-bold text-cyan-300 appearance-none text-center">
+                                    <option value="1">Beg</option>
+                                    <option value="2">Int</option>
+                                    <option value="3" selected>Adv</option>
+                                </select>
+                            </div>
+                            <textarea placeholder="Tailoring Context (e.g. 'Focus on entropy algorithms')"
+                                class="sub-tailor glass-input w-full p-3 text-xs h-16 resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    <button id="addSubjectBtn"
+                        class="w-full mt-4 py-2 border border-dashed border-white/20 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-300 hover:bg-white/10 transition-all">
+                        + Append Target
+                    </button>
+                    <div class="mt-4">
+                        <label class="text-xs text-slate-300">
+                            Total Study Time:
+                            <span id="timeValue">120</span> mins
+                        </label>
+
+                        <input id="timeSlider" type="range" min="30" max="300" step="10" value="120"
+                            class="w-full mt-2 accent-cyan-400">
+                    </div>
+
+                    <button id="generateBtn"
+                        class="w-full mt-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all transform active:scale-95 text-sm uppercase tracking-wider">
+                        Request AI Blueprint
+                    </button>
+                </section>
+
+                <!-- Pomodoro Engine -->
+                <section id="timerCard" class="glass-panel p-8 text-center relative overflow-hidden">
+                    <p id="timerSubjectLabel"
+                        class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Engine Standby</p>
+                    <div id="timerDisplay"
+                        class="text-6xl md:text-7xl font-black mb-6 tracking-tighter tabular-nums drop-shadow-lg text-white">
+                        25:00</div>
+                    <div class="flex justify-center gap-3 relative z-10">
+                        <div class="flex flex-col items-center gap-4">
+
+                            <!-- MAIN CONTROLS -->
+                            <div class="flex items-center gap-3">
+                                <button id="timerToggle"
+                                    class="px-6 py-3 bg-white text-slate-900 rounded-full font-bold text-xs hover:bg-cyan-400 transition-all uppercase tracking-wider">
+                                    Start Focus
+                                </button>
+
+                                <button id="timerReset"
+                                    class="w-10 h-10 flex items-center justify-center bg-white/10 border border-white/10 rounded-full text-white hover:bg-white/20 transition-all">
+                                    ↺
+                                </button>
+                            </div>
+
+                            <!-- TIME ADD BUTTONS -->
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="timeAdd w-12 h-12 flex items-center justify-center rounded-full bg-white/10 border border-white/10 text-xs font-bold text-white hover:bg-cyan-400/20 hover:scale-110 transition-all"
+                                    data-add="30">+30</button>
+
+                                <button
+                                    class="timeAdd w-12 h-12 flex items-center justify-center rounded-full bg-white/10 border border-white/10 text-xs font-bold text-white hover:bg-cyan-400/20 hover:scale-110 transition-all"
+                                    data-add="60">+60</button>
+
+                                <button
+                                    class="timeAdd w-12 h-12 flex items-center justify-center rounded-full bg-white/10 border border-white/10 text-xs font-bold text-white hover:bg-cyan-400/20 hover:scale-110 transition-all"
+                                    data-add="120">+120</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Output Column -->
+            <div class="xl:col-span-8 flex flex-col gap-6">
+                <section class="glass-panel p-6 md:p-8 flex-1 flex flex-col min-h-[600px]">
+                    <div class="border-b border-white/10 pb-4 mb-6">
+                        <h2 class="text-2xl font-bold">Execution Plan</h2>
+                        <p class="text-slate-400 text-xs mt-1">Real-time architecture parsed by Gemini 2.5 Models.</p>
+                    </div>
+
+                    <div id="planOutput" class="space-y-5 flex-1 overflow-y-auto pr-2 pb-4">
+                        <div class="flex flex-col items-center justify-center h-full text-center opacity-40 py-20">
+                            <p class="text-sm font-medium tracking-wide">Enter your API key and targets to initialize
+                                Gemini inference.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glass-panel p-5">
+                    <label class="block text-[10px] font-bold uppercase text-cyan-400 mb-2 tracking-widest">Global
+                        Refinement (Sent to AI)</label>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input id="refineInput" type="text"
+                            placeholder="e.g. 'Make it harder' or 'Add more visual analogies'"
+                            class="flex-1 glass-input p-3 text-sm" />
+
+                        <button id="refineBtn"
+                            class="px-8 py-3 bg-white/10 border border-white/20 rounded-xl font-bold text-xs uppercase tracking-widest">Send
+                            Instruction</button>
+                        <button id="regenBtn"
+                            class="px-8 py-3 bg-white/10 border border-white/20 rounded-xl font-bold text-xs uppercase tracking-widest">Regenerate
+                            Plan</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lastPlanData = null;
+        // ✅ LOADER FIX (GLOBAL)
+        window.addEventListener("load", () => {
+            const preloader = document.getElementById("preloader");
+
+            if (!preloader) return;
+
+            preloader.style.opacity = "0";
+
+            setTimeout(() => {
+                preloader.style.display = "none";
+            }, 400);
+        });
+
+        // 🔥 FAILSAFE (NEVER STUCK AGAIN)
+        setTimeout(() => {
+            const preloader = document.getElementById("preloader");
+            if (preloader) preloader.style.display = "none";
+        }, 2500);
+        document.addEventListener('DOMContentLoaded', () => {
+            // 🔊 SOUND
+            function beep(freq = 500, duration = 150) {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = "sine";
+                osc.frequency.value = freq;
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start();
+
+                gain.gain.setValueAtTime(1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+
+                setTimeout(() => osc.stop(), duration);
+            }
+
+            // 🎯 ELEMENTS
+            const timeValue = document.getElementById("timeValue");
+            const timeSlider = document.getElementById("timeSlider");
+            const apiKeyInput = document.getElementById('apiKey');
+            const generateBtn = document.getElementById('generateBtn');
+            const planOutput = document.getElementById('planOutput');
+            const refineBtn = document.getElementById('refineBtn');
+            const refineInput = document.getElementById('refineInput');
+            const regenBtn = document.getElementById('regenBtn');
+            const addSubjectBtn = document.getElementById("addSubjectBtn");
+            const subjectContainer = document.getElementById("subject-container");
+            if (timeSlider && timeValue) {
+                timeSlider.addEventListener("input", () => {
+                    timeValue.innerText = timeSlider.value;
+                });
+            }
+
+            addSubjectBtn.addEventListener("click", () => {
+                beep(600, 80); // 🔊 sound feedback
+
+                const newSubject = document.createElement("div");
+                newSubject.className = "subject-entry glass-panel p-4 !bg-white/5 !shadow-none !border-white/10 animate-fade-in";
+
+                newSubject.innerHTML = `
+    <div class="flex gap-3 mb-3">
+      <input type="text" placeholder="Subject"
+        class="sub-name glass-input flex-1 p-3 text-sm font-semibold">
+      <select class="sub-lvl glass-input w-24 p-3 text-xs font-bold text-cyan-300 text-center">
+        <option value="1">Beginner</option>
+        <option value="2">Intermediate</option>
+        <option value="3" selected>Advanced</option>
+      </select>
+    </div>
+    <textarea placeholder="Tailoring Context"
+      class="sub-tailor glass-input w-full p-3 text-xs h-16 resize-none"></textarea>
+
+    <button class="remove-btn mt-2 text-xs text-red-400 hover:text-red-300">
+      ✖ Remove
+    </button>
+  `;
+
+                const timeValue = document.getElementById("timeValue");
+
+                timeSlider.addEventListener("input", () => {
+                    timeValue.innerText = timeSlider.value;
+                });
+
+                // 🔥 REMOVE FUNCTION
+                newSubject.querySelector(".remove-btn").addEventListener("click", () => {
+                    newSubject.remove();
+                });
+
+                subjectContainer.appendChild(newSubject);
+            });
+
+            // 🔁 REGENERATE
+            regenBtn.addEventListener("click", () => {
+                beep(600, 80);
+                generateBtn.click();
+            });
+
+
+
+            // 🧠 TIMER SYSTEM
+            let currentTimerDuration = 25 * 60;
+            let remainingTime = currentTimerDuration;
+            let timerInterval = null;
+
+            function updateTimerDisplay() {
+                const m = Math.floor(remainingTime / 60);
+                const s = remainingTime % 60;
+                document.getElementById("timerDisplay").innerText =
+                    `${m}:${s.toString().padStart(2, '0')}`;
+            }
+
+            function setTimerFromPlan(minutes) {
+                currentTimerDuration = minutes * 60;
+                remainingTime = currentTimerDuration;
+                clearInterval(timerInterval);
+                updateTimerDisplay();
+            }
+
+            function startTimer() {
+                clearInterval(timerInterval);
+
+                timerInterval = setInterval(() => {
+                    if (remainingTime <= 0) {
+                        clearInterval(timerInterval);
+                        beep(300, 300);
+                        document.getElementById("timerSubjectLabel").innerText = "Session Complete!";
+                        return;
+                    }
+
+                    remainingTime--;
+                    updateTimerDisplay();
+                }, 1000);
+            }
+
+            document.getElementById("timerToggle").addEventListener("click", () => {
+                beep(800, 100);
+                startTimer();
+            });
+
+            document.getElementById("timerReset").addEventListener("click", () => {
+                beep(500, 80);
+                setTimerFromPlan(currentTimerDuration / 60);
+            });
+
+            document.querySelectorAll(".timeAdd").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const add = parseInt(btn.dataset.add, 10);
+                    remainingTime += add;
+                    updateTimerDisplay();
+                    beep(900, 80);
+                });
+            });
+
+            // 🤖 MODELS
+            async function callAI(system, user) {
+                const geminiKey = apiKeyInput.value.trim();
+                // OpenAI and Anthropic support disabled for now (reserved for future upgrade)
+                // const openaiKey = document.getElementById("openaiKey")?.value?.trim();
+                // const anthropicKey = document.getElementById("anthropicKey")?.value?.trim();
+
+                // 🥇 GEMINI (FAST)
+                if (geminiKey) {
+                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`;
+
+                    const payload = {
+                        contents: [{
+                            role: "user",
+                            parts: [{ text: system + "\n\nUser Request: " + user }]
+                        }],
+                        
+                    };
+
+                    const res = await fetch(endpoint, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+
+console.log("RAW GEMINI:", data);
+
+// Try multiple response formats
+let text =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+    data?.candidates?.[0]?.content?.parts?.[0]?.json ||
+    data?.candidates?.[0]?.content?.text;
+
+if (!text) {
+    throw new Error("Empty Gemini response");
+}
+
+// Clean formatting
+text = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+// Extract JSON safely
+const start = text.indexOf("[");
+const end = text.lastIndexOf("]");
+
+if (start === -1 || end === -1) {
+    console.error("BAD RESPONSE:", text);
+    throw new Error("AI did not return valid JSON array");
+}
+
+const jsonString = text.substring(start, end + 1);
+
+try {
+    const parsed = JSON.parse(jsonString);
+
+    return {
+        data: parsed,
+        modelUsed: "Gemini Flash"
+    };
+} catch (e) {
+    console.error("PARSE FAILED:", jsonString);
+    throw new Error("Invalid Gemini JSON format");
+}
+                }
+
+                // OpenAI & Anthropic branches removed/disabled to simplify current flow.
+                throw new Error("OpenAI and Anthropic support are temporarily disabled. Provide a Gemini API key to use the engine.");
+            }
+
+            // 🎨 RENDER
+            function renderCards(data) {
+                planOutput.innerHTML = "";
+
+                if (!Array.isArray(data)) {
+                    planOutput.innerHTML = `
+          <div class="p-4 bg-yellow-500/10 border border-yellow-500 text-yellow-100 rounded-xl">
+            Unexpected AI format — expected an array.
+          </div>
+        `;
+                    return;
+                }
+
+                data.forEach(item => {
+                    const card = document.createElement("div");
+
+                    const colorClass = item.color || "border-emerald-500";
+                    card.className = `glass-panel p-6 border-l-4 ${colorClass} mb-5 cursor-pointer hover:scale-[1.02] transition`;
+
+                    card.innerHTML = `
+        <h3 class="text-xl font-bold">${item.name || "Untitled"}</h3>
+        <p class="text-sm text-slate-400">${item.strategy || ""}</p>
+        <p class="text-xs text-cyan-300 mt-2">${item.aiInsight || ""}</p>
+        <div class="text-right text-lg font-bold mt-3">${item.time || 0} min</div>
+      `;
+
+                    card.addEventListener("click", () => {
+                        beep(600, 80);
+                        setTimerFromPlan(Number(item.time) || 25);
+                        document.getElementById("timerSubjectLabel").innerText = item.name || "Focus";
+                    });
+
+                    planOutput.appendChild(card);
+                });
+            }
+
+            // 🚀 GENERATE
+
+            generateBtn.addEventListener('click', async () => {
+                beep(700, 100);
+                generateBtn.disabled = true;
+
+                try {
+                    const entries = document.querySelectorAll('.subject-entry');
+                    let parsedSubjects = [];
+
+                    entries.forEach(entry => {
+                        const name = (entry.querySelector('.sub-name')?.value || "").trim();
+                        const lvl = entry.querySelector('.sub-lvl')?.value || "";
+                        const tailor = (entry.querySelector('.sub-tailor')?.value || "").trim();
+
+                        if (name) {
+                            parsedSubjects.push(`Subject: ${name}, Level: ${lvl}, Context: ${tailor}`);
+                        }
+                    });
+
+                    if (parsedSubjects.length === 0) {
+                        planOutput.innerHTML = `
+                <div class="text-center py-20 text-slate-400">
+                    <p class="text-lg font-semibold">No subjects added</p>
+                    <p class="text-sm mt-2">Add subjects to generate your AI plan</p>
+                </div>`;
+                        return;
+                    }
+
+                    planOutput.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-20">
+                <div class="w-10 h-10 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                <p class="mt-4 text-cyan-300 text-sm">Generating AI Plan...</p>
+            </div>`;
+
+                    const systemInstruction = `
+You are an AI that generates structured study plans.
+
+Return ONLY a JSON array.
+
+Format:
+[
+  {
+    "name": "Topic name",
+    "time": number (minutes),
+    "mode": "Study method",
+    "strategy": "How to study",
+    "aiInsight": "Smart tip",
+    "color": "border-emerald-500"
+  }
+]
+
+Rules:
+- No text outside JSON
+- No explanation
+- No markdown
+- Always valid JSON
+`;
+
+                    const totalTime = timeSlider.value;
+
+                    const result = await callAI(
+                        systemInstruction + `\nTotal Study Time: ${totalTime} minutes`,
+                        parsedSubjects.join(" | ")
+                    );
+
+                    console.log("Using AI:", result.modelUsed);
+
+                    lastPlanData = result.data;
+                    renderCards(result.data);
+
+                    planOutput.insertAdjacentHTML(
+                        "afterbegin",
+                        `<div class="text-[10px] text-cyan-400 mb-4">Model Used: ${result.modelUsed}</div>`
+                    );
+
+                } catch (err) {
+                    planOutput.innerHTML = `
+            <div class="p-4 bg-red-500/20 border border-red-500 text-red-200 rounded-xl">
+                API Error: ${err.message}
+            </div>`;
+                    console.error(err);
+                } finally {
+                    generateBtn.disabled = false;
+                }
+            });
+            // 🔁 REFINE
+           refineBtn.addEventListener('click', async () => {
+    const req = refineInput.value.trim();
+    if (!req) return;
+
+    if (!lastPlanData) {
+        alert("Generate a plan first");
+        return;
+    }
+
+    try {
+        beep(700, 80);
+
+        const totalTime = timeSlider.value;
+const compactPlan = lastPlanData.map(i => ({
+    name: i.name,
+    time: i.time
+}));
+       const result = await callAI(
+`You are modifying a study plan.
+
+Instruction: ${req}
+
+STRICT RULES:
+- Total time MUST equal ${totalTime} minutes
+- Sum of all time values MUST equal ${totalTime}
+- Do NOT exceed total time
+- Return ONLY JSON array
+- Keep structure same as before
+
+Schema:
+[
+  {
+    "name": "string",
+    "time": number,
+    "mode": "string",
+    "strategy": "string",
+    "aiInsight": "string",
+    "color": "border-emerald-500"
+  }
+]`,
+    
+    JSON.stringify(compactPlan)
+);
+
+        lastPlanData = result.data;
+        renderCards(result.data);
+        refineInput.value = "";
+
+    } catch (err) {
+        alert("Refine failed: " + err.message);
+        console.error(err);
+    }
+});
+        });
+    </script>
+</body>
+
+</html>
