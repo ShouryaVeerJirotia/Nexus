@@ -42,31 +42,35 @@ app.post("/generate", async (req, res) => {
     try {
         const { prompt, customKey } = req.body;
 
-        // 🛡️ Priority Logic: Use Custom Key if provided, else Global Env Key
+        // 🛡️ Priority Logic
         const apiKeyToUse = (customKey && customKey.trim() !== "") 
             ? customKey 
             : process.env.GEMINI_API_KEY;
 
-        // Initialize Google AI with the selected key
+        if (!apiKeyToUse) {
+            throw new Error("No API Key detected. Engine Offline.");
+        }
+
+        // Initialize inside the route to ensure scope is fresh
         const genAI = new GoogleGenerativeAI(apiKeyToUse);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // Generate content
         const result = await model.generateContent(prompt);
         const response = await result.response;
         let text = response.text();
 
-        // Clean JSON formatting from AI response
+        // Clean & Parse
         const cleanJson = text.replace(/```json|```/g, "").trim();
+        const parsedData = JSON.parse(cleanJson);
         
-        // Send back the data and a label for the UI
         res.json({ 
-            data: JSON.parse(cleanJson), 
+            data: parsedData, 
             modelUsed: customKey ? "Personal Satellite Link" : "Nexus Shared Engine" 
         });
 
     } catch (error) {
-        console.error("Neural Link Error:", error);
+        console.error("Neural Link Error:", error.message);
+        // This will tell you EXACTLY what's wrong in the Render logs
         res.status(500).json({ error: "API Failure: " + error.message });
     }
 });
