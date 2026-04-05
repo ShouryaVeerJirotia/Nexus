@@ -53,7 +53,7 @@ app.post("/generate", async (req, res) => {
 
         // Initialize inside the route to ensure scope is fresh
         const genAI = new GoogleGenerativeAI(apiKeyToUse);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
