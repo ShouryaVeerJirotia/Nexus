@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const fs = require("fs"); // ✅ Added for saving feedback
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 dotenv.config();
 console.log("Key Loaded:", process.env.GEMINI_API_KEY ? "YES" : "NO");
