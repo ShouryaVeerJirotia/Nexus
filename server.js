@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const fs = require("fs"); // ✅ Added for saving feedback
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 dotenv.config();
 console.log("Key Loaded:", process.env.GEMINI_API_KEY ? "YES" : "NO");
@@ -40,34 +39,33 @@ app.post("/api/feedback", (req, res) => {
 // ✅ The Generate Route (Keeping your existing logic)
 app.post("/generate", async (req, res) => {
     try {
-        const { prompt, customKey, attachment } = req.body;
+        const { prompt } = req.body;
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                }),
+            }
+        );
 
-        const apiKeyToUse = (customKey && customKey.trim() !== "") 
-            ? customKey 
-            : process.env.GEMINI_API_KEY;
+        const data = await response.json();
+        if (data.error) return res.status(400).json({ error: data.error.message });
 
-        const genAI = new GoogleGenerativeAI(apiKeyToUse);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        let rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+        const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+        const cleanText = jsonMatch ? jsonMatch[0] : "[]";
 
-        // 🧠 Build the "Neural Payload"
-        const contentItems = [prompt];
-        if (attachment) {
-            contentItems.push(attachment); // Inject the PDF or Image data
-        }
-
-        const result = await model.generateContent(contentItems);
-        const response = await result.response;
-        let text = response.text();
-
-        const cleanJson = text.replace(/```json|```/g, "").trim();
         res.json({ 
-            data: JSON.parse(cleanJson), 
-            modelUsed: customKey ? "Personal Satellite Link" : "Nexus Shared Engine" 
+            data: JSON.parse(cleanText),
+            modelUsed: "Gemini 2.5 Flash"
         });
 
     } catch (error) {
-        console.error("Neural Link Error:", error);
-        res.status(500).json({ error: "API Failure: " + error.message });
+        console.error("SERVER ERROR:", error);
+        res.status(500).json({ error: "Server Error", data: [] });
     }
 });
 
