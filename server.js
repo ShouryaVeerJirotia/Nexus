@@ -40,37 +40,33 @@ app.post("/api/feedback", (req, res) => {
 // ✅ The Generate Route (Keeping your existing logic)
 app.post("/generate", async (req, res) => {
     try {
-        const { prompt, customKey } = req.body;
+        const { prompt, customKey, attachment } = req.body;
 
-        // 🛡️ Priority Logic
         const apiKeyToUse = (customKey && customKey.trim() !== "") 
             ? customKey 
             : process.env.GEMINI_API_KEY;
 
-        if (!apiKeyToUse) {
-            throw new Error("No API Key detected. Engine Offline.");
+        const genAI = new GoogleGenerativeAI(apiKeyToUse);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // 🧠 Build the "Neural Payload"
+        const contentItems = [prompt];
+        if (attachment) {
+            contentItems.push(attachment); // Inject the PDF or Image data
         }
 
-        // Initialize inside the route to ensure scope is fresh
-        const genAI = new GoogleGenerativeAI(apiKeyToUse);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent(contentItems);
         const response = await result.response;
         let text = response.text();
 
-        // Clean & Parse
         const cleanJson = text.replace(/```json|```/g, "").trim();
-        const parsedData = JSON.parse(cleanJson);
-        
         res.json({ 
-            data: parsedData, 
+            data: JSON.parse(cleanJson), 
             modelUsed: customKey ? "Personal Satellite Link" : "Nexus Shared Engine" 
         });
 
     } catch (error) {
-        console.error("Neural Link Error:", error.message);
-        // This will tell you EXACTLY what's wrong in the Render logs
+        console.error("Neural Link Error:", error);
         res.status(500).json({ error: "API Failure: " + error.message });
     }
 });
