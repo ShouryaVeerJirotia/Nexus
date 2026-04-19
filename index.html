@@ -2,6 +2,12 @@
 <html lang="en">
 
 <head>
+    <link rel="manifest" href="/manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         // 🛡️ Traffic Controller: Force Landing Page on first visit
@@ -396,28 +402,29 @@
 
     <script>
         let attachedFileData = null; // Global variable to store the file
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-        document.getElementById('fileInput').addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        // 🚨 CRITICAL FIX: Split the string and take only the raw data (index [1])
+        const rawBase64 = event.target.result.split(',')[1]; 
 
-            // Update UI to show the file name
-            document.getElementById('fileNameDisplay').innerText = file.name;
-            document.getElementById('fileNameDisplay').classList.replace('text-slate-400', 'text-cyan-400');
+        attachedFileData = {
+            inlineData: {
+                data: rawBase64,
+                mimeType: file.type
+            }
+        };
 
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                // Prepare the payload for Gemini
-                attachedFileData = {
-                    inlineData: {
-                        data: event.target.result.split(',')[1], // Get raw base64 string
-                        mimeType: file.type
-                    }
-                };
-                console.log("✅ Intel Encrypted & Ready");
-            };
-            reader.readAsDataURL(file);
-        });
+        // UI Feedback
+        document.getElementById('fileNameDisplay').innerText = file.name;
+        document.getElementById('fileNameDisplay').style.color = "#22d3ee"; // Cyan-400
+        console.log("✅ Intel Encrypted & Ready for Engine");
+    };
+    reader.readAsDataURL(file);
+});
 
         let lastPlanData = null;
         // ✅ LOADER FIX (GLOBAL)
@@ -758,6 +765,7 @@ Rules:
 - No text outside JSON
 - No markdown
 - Always valid JSON
+-No * or formatting characters in output
 `;
 
                     const totalTime = timeSlider.value;
@@ -844,7 +852,7 @@ Return ONLY JSON array`,
                 class="glass-input w-full p-3 text-xs mb-3 font-mono">
             <p class="text-[9px] text-slate-400 leading-relaxed">
                 Leave blank to use the default shared engine. Your key is only sent to the server for the current
-                session. Must use when Shared API is Not Available.
+                session. Must use when shared API is not available.
             </p>
         </div>
     </div>
@@ -927,50 +935,43 @@ Return ONLY JSON array`,
         }
 
         // 📄 2. PDF EXPORT LOGIC (Optimized for your JSON structure)
-        function exportToPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+     function exportToPDF() {
+    if (!lastPlanData || lastPlanData.length === 0) return alert("Initialize a Blueprint first!");
 
-            if (!lastPlanData || lastPlanData.length === 0) return alert("Initialize a Blueprint first.");
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
 
-            // PDF Header
-            doc.setFillColor(15, 23, 42);
-            doc.rect(0, 0, 210, 30, 'F');
-            doc.setTextColor(34, 211, 238);
-            doc.setFontSize(16);
-            doc.text("NEXUS v7.0: EXECUTION BLUEPRINT", 15, 20);
+    // --- (Your existing PDF drawing logic here) ---
+    // Example: doc.text("Study Plan", 10, 10);
 
-            doc.setTextColor(100, 100, 100);
-            doc.setFontSize(8);
-            doc.text(`Generated: ${new Date().toLocaleString()}`, 15, 26);
+    // 🚩 THE WATERMARK LOGIC
+    const pageHeight = doc.internal.pageSize.height || 297; // A4 height
+    const pageWidth = doc.internal.pageSize.width || 210;  // A4 width
+    
+    doc.setFontSize(10);
+    doc.setTextColor(230, 230, 230); // 230 is a very faint gray
+    
+    // Position it about 10mm from the bottom and 15mm from the right
+    doc.text("SVJ", pageWidth - 15, pageHeight - 10);
 
-            // Content Parsing
-            let yPos = 45;
-            lastPlanData.forEach((item, index) => {
-                doc.setFontSize(12);
-                doc.setTextColor(0, 0, 0);
-                doc.setFont("helvetica", "bold");
-                doc.text(`${index + 1}. ${item.name}`, 15, yPos);
-
-                doc.setFontSize(10);
-                doc.setFont("helvetica", "normal");
-                doc.setTextColor(80, 80, 80);
-
-                const bodyText = item.notes ? item.notes : `${item.mode} | ${item.time} mins\nStrategy: ${item.strategy}`;
-                const splitText = doc.splitTextToSize(bodyText, 175);
-
-                doc.text(splitText, 15, yPos + 7);
-                yPos += (splitText.length * 6) + 15;
-
-                // Add page if content exceeds height
-                if (yPos > 270) {
-                    doc.addPage();
-                    yPos = 20;
-                }
-            });
-
-            doc.save(`Nexus_Intel_${Date.now()}.pdf`);
-        }
+    // 🚩 THE ANDROID DOWNLOAD FIX
+    // Using a Blob + URL.createObjectURL is more reliable on mobile WebViews
+    const pdfBlob = doc.output('blob');
+    const url = URL.createObjectURL(pdfBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Nexus_Plan_SVJ.pdf`;
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, 100);
+}
 
         // 🧹 1. WIPE FUNCTION (REPLACE YOURS)
         function clearArchive() {
